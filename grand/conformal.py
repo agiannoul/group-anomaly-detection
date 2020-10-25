@@ -10,7 +10,8 @@ __email__ = "mohamed-rafik.bouguelia@hh.se"
 from grand import utils
 from sklearn.neighbors import LocalOutlierFactor
 import numpy as np
-
+from sklearn.neighbors import KDTree
+from grand.utils import NoRefGroupError
 
 def get_strangeness(measure="median", k=10):
     utils.validate_measure_str(measure)
@@ -73,7 +74,15 @@ class StrangenessKNN(Strangeness):
 
     def fit(self, X):
         super().fit(X)
-        self.scores = [self.predict(xx)[0] for xx in self.X]
+        self.kdt = KDTree(X, leaf_size=30, metric='euclidean')
+        meansAr=[]
+        if len(X)<=self.k:
+            raise NoRefGroupError(" reference group data with less than k samples.")
+        dists,self.idsall=self.kdt.query(X, k=self.k+1, return_distance=True)
+        for i in range(len(X)):
+            mean_knn_dists = np.mean(dists[i,1:])
+            meansAr.append(mean_knn_dists)
+        self.scores=meansAr
 
     def predict(self, x):
         super().predict(x)
